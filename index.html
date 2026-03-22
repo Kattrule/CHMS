@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHMS Klocka</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0a19">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕔</text></svg>">
+    
+    <style>
+        :root {
+            --bg-color: #0a0a19;
+            --panel-bg: rgba(98, 114, 164, 0.1);
+            --indigo: #7582ff;
+            --cyan: #8be9fd;
+            --green: #50fa7b;
+            --purple: #bd93f9;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--cyan);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        @media (min-width: 800px) {
+            .main-container {
+                grid-template-columns: 1fr 1fr;
+            }
+            .full-width {
+                grid-column: span 2;
+            }
+        }
+
+        .section {
+            background: var(--panel-bg);
+            border: 1px solid var(--indigo);
+            padding: 20px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            transition: transform 0.2s;
+        }
+
+        .section:hover {
+            transform: translateY(-5px);
+            border-color: var(--cyan);
+        }
+
+        h1, h2 { 
+            color: var(--indigo); 
+            margin: 0 0 15px 0; 
+            text-transform: uppercase; 
+            font-size: 0.9rem; 
+            letter-spacing: 2px; 
+        }
+
+        #clock { 
+            font-size: 4rem; 
+            color: var(--indigo); 
+            text-shadow: 0 0 20px rgba(117, 130, 255, 0.6);
+            font-weight: bold;
+        }
+
+        .timer-input {
+            background: #1e1e2e;
+            border: 2px solid var(--indigo);
+            color: var(--indigo);
+            font-size: 2.5rem;
+            width: 90px;
+            border-radius: 12px;
+            text-align: center;
+            outline: none;
+            margin: 5px;
+        }
+
+        select, input[type="number"], input[type="time"] {
+            background: #1e1e2e;
+            border: 1px solid var(--indigo);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            outline: none;
+            margin: 5px;
+        }
+
+        .res-val { 
+            font-size: 1.5rem; 
+            color: var(--green); 
+            font-weight: bold; 
+            margin-top: 10px; 
+            display: block; 
+            text-shadow: 0 0 10px rgba(80, 250, 123, 0.3);
+        }
+
+        .input-row { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; }
+        .tiny-input { width: 60px; font-size: 1.1rem; }
+        
+        button {
+            background: transparent;
+            border: 2px solid var(--green);
+            color: var(--green);
+            padding: 10px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--green);
+            color: var(--bg-color);
+        }
+
+        hr { border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
+        p { font-size: 0.75rem; color: var(--purple); margin: 5px 0; letter-spacing: 1px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        
+        <div class="section full-width">
+            <h1>CHMS TID</h1>
+            <div id="clock">00:00:00</div>
+        </div>
+
+        <div class="section">
+            <h2>TIMER & STOPPUR</h2>
+            <div class="input-row">
+                <input type="number" id="tH" class="timer-input" value="00">
+                <input type="number" id="tM" class="timer-input" value="00">
+                <input type="number" id="tS" class="timer-input" value="00">
+            </div>
+            <div style="margin-top: 15px;">
+                <button onclick="startTimer()">START NER</button>
+                <button onclick="startStopwatch()">START UPP</button>
+                <button onclick="pauseAll()" style="border-color: #ffb86c; color: #ffb86c;">STOP</button>
+                <button onclick="resetAll()" style="border-color: #ff5555; color: #ff5555;">RESET</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>HASTIGHETS KONVERTERARE</h2>
+            <div class="input-row">
+                <input type="number" id="speedInput" placeholder="Värde..." oninput="universalSpeed()" style="width: 100px;">
+                <select id="fromSpeed" onchange="universalSpeed()">
+                    <option value="kmh">km/h</option>
+                    <option value="ms">m/s</option>
+                    <option value="kmch">km/ch</option>
+                    <option value="mcs">m/cs</option>
+                </select>
+            </div>
+            <p>Konvertera till</p>
+            <select id="toSpeed" onchange="universalSpeed()" style="width: 80%;">
+                <option value="kmch">km/ch</option>
+                <option value="mcs">m/cs</option>
+                <option value="kmh">km/h</option>
+                <option value="ms">m/s</option>
+            </select>
+            <span class="res-val" id="speedOutput">0</span>
+        </div>
+
+        <div class="section full-width">
+            <h2>TIDS KONVERTERARE</h2>
+            <div class="input-row">
+                <select id="timeMode" onchange="toggleTimeInputs()">
+                    <option value="duration">Tidslängd</option>
+                    <option value="clock">Klockslag</option>
+                </select>
+                <select id="timeDir" onchange="toggleTimeInputs()">
+                    <option value="vToM">Tid ➔ CTid</option>
+                    <option value="mToV">CTid ➔ Tid</option>
+                </select>
+            </div>
+
+            <div id="hmsInputs" class="input-row">
+                <input type="number" id="inH" class="tiny-input" placeholder="H" oninput="runTimeConv()">
+                <input type="number" id="inM" class="tiny-input" placeholder="M" oninput="runTimeConv()">
+                <input type="number" id="inS" class="tiny-input" placeholder="S" oninput="runTimeConv()">
+            </div>
+
+            <div id="clockInput" class="input-row" style="display:none;">
+                <input type="time" id="inTime" oninput="runTimeConv()" style="width: 200px; font-size: 1.2rem;">
+            </div>
+
+            <span class="res-val" id="timeOutput">--:--:--</span>
+        </div>
+
+    </div>
+
+    <script>
+        // --- PWA SERVICE WORKER REGISTRERING ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker registrerad!', reg.scope))
+                .catch(err => console.error('Service Worker fel:', err));
+            });
+        }
+
+        // --- REALTIDSKLOCKA ---
+        function updateClock() {
+            const now = new Date();
+            const totalS = (now.getHours()*3600)+(now.getMinutes()*60)+now.getSeconds()+(now.getMilliseconds()/1000);
+            const u = Math.floor((totalS/86400)*200000);
+            document.getElementById('clock').innerText = 
+                `${String(Math.floor(u/10000)).padStart(2,'0')}:${String(Math.floor((u%10000)/100)).padStart(2,'0')}:${String(u%100).padStart(2,'0')}`;
+        }
+        setInterval(updateClock, 100);
+
+        // --- TIMER & STOPPUR ---
+        let tTotalUnits = 0, tInt = null;
+        const elH = document.getElementById('tH'), elM = document.getElementById('tM'), elS = document.getElementById('tS');
+        function syncInp() {
+            elH.value = String(Math.floor(tTotalUnits/10000)).padStart(2,'0');
+            elM.value = String(Math.floor((tTotalUnits%10000)/100)).padStart(2,'0');
+            elS.value = String(tTotalUnits%100).padStart(2,'0');
+        }
+        function startTimer() {
+            if(tInt) return;
+            tTotalUnits = (parseInt(elH.value)||0)*10000 + (parseInt(elM.value)||0)*100 + (parseInt(elS.value)||0);
+            if(tTotalUnits > 0) tInt = setInterval(() => { 
+                tTotalUnits--; syncInp(); 
+                if(tTotalUnits<=0){ clearInterval(tInt); tInt=null; alert("Tiden är ute!"); }
+            }, 432);
+        }
+        function startStopwatch() {
+            if(tInt) return;
+            tTotalUnits = (parseInt(elH.value)||0)*10000 + (parseInt(elM.value)||0)*100 + (parseInt(elS.value)||0);
+            tInt = setInterval(() => { tTotalUnits++; syncInp(); }, 432);
+        }
+        function pauseAll() { clearInterval(tInt); tInt = null; }
+        function resetAll() { pauseAll(); tTotalUnits = 0; syncInp(); }
+
+        // --- KONVERTERARE ---
+        function toggleTimeInputs() {
+            const mode = document.getElementById('timeMode').value;
+            const dir = document.getElementById('timeDir').value;
+            if(mode === 'clock' && dir === 'vToM') {
+                document.getElementById('hmsInputs').style.display = 'none';
+                document.getElementById('clockInput').style.display = 'flex';
+            } else {
+                document.getElementById('hmsInputs').style.display = 'flex';
+                document.getElementById('clockInput').style.display = 'none';
+            }
+            runTimeConv();
+        }
+
+        function runTimeConv() {
+            const mode = document.getElementById('timeMode').value;
+            const dir = document.getElementById('timeDir').value;
+            let res = "";
+            if(mode === 'clock' && dir === 'vToM') {
+                const t = document.getElementById('inTime').value;
+                if(!t) res = "--:--:--"; 
+                else {
+                    const p = t.split(':'), s = (parseInt(p[0])*3600)+(parseInt(p[1])*60), u = Math.floor((s/86400)*200000);
+                    res = `${String(Math.floor(u/10000)).padStart(2,'0')}:${String(Math.floor((u%10000)/100)).padStart(2,'0')}:${String(u%100).padStart(2,'0')}`;
+                }
+            } else {
+                const h = parseInt(document.getElementById('inH').value)||0, m = parseInt(document.getElementById('inM').value)||0, s = parseInt(document.getElementById('inS').value)||0;
+                if(dir === 'vToM') {
+                    const u = Math.floor(((h*3600+m*60+s)/86400)*200000);
+                    res = `${Math.floor(u/10000)}h ${Math.floor((u%10000)/100)}m ${u%100}s`;
+                } else {
+                    const ts = Math.floor(((h*10000+m*100+s)/200000)*86400);
+                    if(mode === 'clock') res = `${String(Math.floor(ts/3600)%24).padStart(2,'0')}:${String(Math.floor((ts%3600)/60)).padStart(2,'0')}`;
+                    else res = `${Math.floor(ts/3600)}h ${Math.floor((ts%3600)/60)}m ${ts%60}s`;
+                }
+            }
+            document.getElementById('timeOutput').innerText = res;
+        }
+
+        // --- HASTIGHET ---
+        function universalSpeed() {
+            const val = parseFloat(document.getElementById('speedInput').value), from = document.getElementById('fromSpeed').value, to = document.getElementById('toSpeed').value;
+            if (isNaN(val)) return;
+            let ms;
+            if(from==="ms") ms=val; else if(from==="kmh") ms=val/3.6; else if(from==="kmch") ms=val/4.32; else ms=val/0.432;
+            let result;
+            if(to==="ms") result=ms; else if(to==="kmh") result=ms*3.6; else if(to==="kmch") result=ms*4.32; else result=ms*0.432;
+            document.getElementById('speedOutput').innerText = result.toFixed(2) + " " + to;
+        }
+    </script>
+</body>
+</html>

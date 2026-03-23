@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHMS Klocka</title>
+    <title>CHMS Klocka - MP3 Edition</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0a19">
@@ -212,6 +212,9 @@
     </div>
 
     <script>
+        // --- LJUD-INSTÄLLNINGAR ---
+        const alarmAudio = new Audio('alarm.mp3');
+
         // --- PWA SERVICE WORKER REGISTRERING ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -223,46 +226,29 @@
 
         // --- NOTIFIERINGAR LOGIK ---
         function requestNotificationPermission() {
-            if (!("Notification" in window)) {
-                console.log("Denna webbläsare stöder inte systemnotiser.");
-                return;
-            }
+            if (!("Notification" in window)) return;
             if (Notification.permission !== "denied" && Notification.permission !== "granted") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        console.log("Notiser tillåtna!");
-                    }
-                });
+                Notification.requestPermission();
             }
         }
 
-        // Kör frågan när sidan laddas
         window.onload = requestNotificationPermission;
 
         function triggerAlarm() {
-            // 1. Spela upp ett ljud (valfritt, men bra för timers)
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // 880Hz tone
-            oscillator.start();
-            setTimeout(() => oscillator.stop(), 1000); // Piper i 1 sekund
+            // 1. Spela MP3-filen
+            alarmAudio.currentTime = 0; // Börja från början
+            alarmAudio.play().catch(e => console.log("Ljudet blockerades av webbläsaren:", e));
 
-            // 2. Skicka Systemnotis
-            if (Notification.permission === "granted") {
+            // 2. Skicka Notis
+            if ("Notification" in window && Notification.permission === "granted") {
                 new Notification("CHMS Klocka", {
                     body: "Tiden är ute!",
-                    icon: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏰</text></svg>" // Ändrad ikon till en väckarklocka
+                    icon: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏰</text></svg>"
                 });
             } else {
-                // Fallback om notiser inte är tillåtna
                 alert("Tiden är ute!");
             }
         }
-
 
         // --- REALTIDSKLOCKA ---
         function updateClock() {
@@ -277,37 +263,59 @@
         // --- TIMER & STOPPUR ---
         let tTotalUnits = 0, tInt = null;
         const elH = document.getElementById('tH'), elM = document.getElementById('tM'), elS = document.getElementById('tS');
+        
         function syncInp() {
             elH.value = String(Math.floor(tTotalUnits/10000)).padStart(2,'0');
             elM.value = String(Math.floor((tTotalUnits%10000)/100)).padStart(2,'0');
             elS.value = String(tTotalUnits%100).padStart(2,'0');
         }
+        
         function startTimer() {
             if(tInt) return;
             
-            // Fråga om notiser igen när de startar en timer, om de inte redan svarat
-            if (Notification.permission === "default") {
+            // "Väck" ljudmotorn så den tillåts spela när tiden är ute
+            alarmAudio.play().then(() => {
+                alarmAudio.pause();
+                alarmAudio.currentTime = 0;
+            }).catch(() => {});
+
+            if ("Notification" in window && Notification.permission === "default") {
                 requestNotificationPermission();
             }
 
             tTotalUnits = (parseInt(elH.value)||0)*10000 + (parseInt(elM.value)||0)*100 + (parseInt(elS.value)||0);
-            if(tTotalUnits > 0) tInt = setInterval(() => { 
-                tTotalUnits--; 
-                syncInp(); 
-                if(tTotalUnits<=0){ 
-                    clearInterval(tInt); 
-                    tInt=null; 
-                    triggerAlarm(); // <-- Anropar notis-funktionen här
-                }
-            }, 432);
+            if(tTotalUnits > 0) {
+                tInt = setInterval(() => { 
+                    tTotalUnits--; 
+                    syncInp(); 
+                    if(tTotalUnits<=0){ 
+                        clearInterval(tInt); 
+                        tInt=null; 
+                        triggerAlarm(); 
+                    }
+                }, 432);
+            }
         }
+        
         function startStopwatch() {
             if(tInt) return;
             tTotalUnits = (parseInt(elH.value)||0)*10000 + (parseInt(elM.value)||0)*100 + (parseInt(elS.value)||0);
             tInt = setInterval(() => { tTotalUnits++; syncInp(); }, 432);
         }
-        function pauseAll() { clearInterval(tInt); tInt = null; }
-        function resetAll() { pauseAll(); tTotalUnits = 0; syncInp(); }
+        
+        function pauseAll() { 
+            clearInterval(tInt); 
+            tInt = null; 
+            alarmAudio.pause(); // Stoppa ljudet om man pausar
+        }
+        
+        function resetAll() { 
+            pauseAll(); 
+            tTotalUnits = 0; 
+            syncInp(); 
+            alarmAudio.pause();
+            alarmAudio.currentTime = 0;
+        }
 
         // --- KONVERTERARE ---
         function toggleTimeInputs() {

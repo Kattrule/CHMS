@@ -221,6 +221,49 @@
             });
         }
 
+        // --- NOTIFIERINGAR LOGIK ---
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                console.log("Denna webbläsare stöder inte systemnotiser.");
+                return;
+            }
+            if (Notification.permission !== "denied" && Notification.permission !== "granted") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        console.log("Notiser tillåtna!");
+                    }
+                });
+            }
+        }
+
+        // Kör frågan när sidan laddas
+        window.onload = requestNotificationPermission;
+
+        function triggerAlarm() {
+            // 1. Spela upp ett ljud (valfritt, men bra för timers)
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // 880Hz tone
+            oscillator.start();
+            setTimeout(() => oscillator.stop(), 1000); // Piper i 1 sekund
+
+            // 2. Skicka Systemnotis
+            if (Notification.permission === "granted") {
+                new Notification("CHMS Klocka", {
+                    body: "Tiden är ute!",
+                    icon: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏰</text></svg>" // Ändrad ikon till en väckarklocka
+                });
+            } else {
+                // Fallback om notiser inte är tillåtna
+                alert("Tiden är ute!");
+            }
+        }
+
+
         // --- REALTIDSKLOCKA ---
         function updateClock() {
             const now = new Date();
@@ -241,10 +284,21 @@
         }
         function startTimer() {
             if(tInt) return;
+            
+            // Fråga om notiser igen när de startar en timer, om de inte redan svarat
+            if (Notification.permission === "default") {
+                requestNotificationPermission();
+            }
+
             tTotalUnits = (parseInt(elH.value)||0)*10000 + (parseInt(elM.value)||0)*100 + (parseInt(elS.value)||0);
             if(tTotalUnits > 0) tInt = setInterval(() => { 
-                tTotalUnits--; syncInp(); 
-                if(tTotalUnits<=0){ clearInterval(tInt); tInt=null; alert("Tiden är ute!"); }
+                tTotalUnits--; 
+                syncInp(); 
+                if(tTotalUnits<=0){ 
+                    clearInterval(tInt); 
+                    tInt=null; 
+                    triggerAlarm(); // <-- Anropar notis-funktionen här
+                }
             }, 432);
         }
         function startStopwatch() {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHMS Klocka</title>
+    <title>CHMS Klocka - MP3 Edition</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0a19">
@@ -21,6 +21,8 @@
             --cyan: #8be9fd;
             --green: #50fa7b;
             --purple: #bd93f9;
+            --orange: #ffb86c;
+            --red: #ff5555;
         }
 
         body {
@@ -115,10 +117,9 @@
         .input-row { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; }
         .tiny-input { width: 60px; font-size: 1.1rem; }
         
+        /* Grunddesign för alla knappar */
         button {
             background: transparent;
-            border: 2px solid var(--green);
-            color: var(--green);
             padding: 10px 20px;
             border-radius: 12px;
             cursor: pointer;
@@ -126,11 +127,37 @@
             text-transform: uppercase;
             margin: 5px;
             transition: all 0.2s;
+            border: 2px solid;
         }
 
-        button:hover {
+        /* START-knappar (Gröna) */
+        .btn-start {
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .btn-start:hover {
             background: var(--green);
             color: var(--bg-color);
+        }
+
+        /* STOP-knapp (Orange) */
+        .btn-stop {
+            border-color: var(--orange);
+            color: var(--orange);
+        }
+        .btn-stop:hover {
+            background: var(--orange);
+            color: var(--bg-color);
+        }
+
+        /* RESET-knapp (Röd) */
+        .btn-reset {
+            border-color: var(--red);
+            color: var(--red);
+        }
+        .btn-reset:hover {
+            background: var(--red);
+            color: white; /* Vit text på röd bakgrund blir snyggast */
         }
 
         hr { border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
@@ -155,10 +182,10 @@
                 <input type="number" id="tS" class="timer-input" value="00">
             </div>
             <div style="margin-top: 15px;">
-                <button onclick="startTimer()">START NER</button>
-                <button onclick="startStopwatch()">START UPP</button>
-                <button onclick="pauseAll()" style="border-color: #ffb86c; color: #ffb86c;">STOP</button>
-                <button onclick="resetAll()" style="border-color: #ff5555; color: #ff5555;">RESET</button>
+                <button class="btn-start" onclick="startTimer()">START NER</button>
+                <button class="btn-start" onclick="startStopwatch()">START UPP</button>
+                <button class="btn-stop" onclick="pauseAll()">STOP</button>
+                <button class="btn-reset" onclick="resetAll()">RESET</button>
             </div>
         </div>
 
